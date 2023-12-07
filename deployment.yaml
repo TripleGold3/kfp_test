@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: trame-app-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: trame-app
+  template:
+    metadata:
+      labels:
+        app: trame-app
+    spec:
+      containers:
+      - name: trame-app
+        image: lvxuxin/trame-app:test
+        ports:
+        - containerPort: 80
