@@ -9,4 +9,4 @@ spec:
   ports:
   - protocol: TCP
     port: 8082  # 外部访问端口
-    targetPort: 31002  # 容器内的端口
+    targetPort: 80  # 容器内的端口
