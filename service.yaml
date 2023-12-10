@@ -1,15 +1,13 @@
-apiVersion: networking.k8s.io/v1
-kind: Ingress
+apiVersion: v1
+kind: Service
 metadata:
-  name: trame-app-ingress
+  name: trame-app-service
 spec:
-  rules:
-  - http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: trame-app-service
-            port:
-              number: 80
+  selector:
+    app: trame-app
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+      NodePort: 2357
+  type: NodePort
