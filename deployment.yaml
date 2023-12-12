@@ -14,6 +14,6 @@ spec:
     spec:
       containers:
       - name: trame-app
-        image: lvxuxin/trame-app:test
+        image: lvxuxin/trame-app:web
         ports:
-        - containerPort: 80
+        - containerPort: 443
