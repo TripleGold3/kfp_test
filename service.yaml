@@ -3,10 +3,10 @@ kind: Service
 metadata:
   name: trame-app-service
 spec:
-  type: NodePort  # 或 NodePort，取决于您的环境
   selector:
     app: trame-app
   ports:
-  - protocol: TCP
-    port: 8082  # 外部访问端口
-    targetPort: 80  # 容器内的端口
+    - protocol: TCP
+      port: 443
+      targetPort: 443
+  type: ClusterIP
