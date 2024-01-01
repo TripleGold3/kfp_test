@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: papraview-deployment
+  name: paraview-deployment
   labels:
-    app: papraview
+    app: paraview
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: papraview
+      app: paraview
   template:
     metadata:
       labels:
-        app: papraview
+        app: paraview
     spec:
       containers:
-      - name: papraview
-        image: lvxuxin/papraview:0101
+      - name: paraview
+        image: lvxuxin/paraview:0101
         ports:
         - containerPort: 80
