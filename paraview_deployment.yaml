@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: papraview-deployment
+  labels:
+    app: papraview
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: papraview
+  template:
+    metadata:
+      labels:
+        app: papraview
+    spec:
+      containers:
+      - name: papraview
+        image: lvxuxin/papraview:0101
+        ports:
+        - containerPort: 80
