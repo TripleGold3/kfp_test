@@ -13,7 +13,7 @@
 
     <script>
         document.getElementById('startButton').addEventListener('click', function() {
-            fetch('http://10.2.14.75:8000/start-docker')
+            fetch('https://10.2.14.75:8000/start-docker')
                 .then(response => response.json())
                 .then(data => {
                     if (data.url) {
