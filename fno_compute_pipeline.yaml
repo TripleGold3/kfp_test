@@ -1,0 +1,239 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: fno-compute-2-
+  annotations: {pipelines.kubeflow.org/kfp_sdk_version: 1.8.3, pipelines.kubeflow.org/pipeline_compilation_time: '2024-06-27T16:29:32.874250',
+    pipelines.kubeflow.org/pipeline_spec: '{"name": "FNO compute"}'}
+  labels: {pipelines.kubeflow.org/kfp_sdk_version: 1.8.3}
+spec:
+  entrypoint: fno-compute-2
+  templates:
+  - name: config
+    container: {image: 'registry.cn-hangzhou.aliyuncs.com/buaanlsde/fnocompute:v1'}
+    outputs:
+      artifacts:
+      - {name: config-data, path: home/app/param/predict_data.yaml}
+      - {name: config-model, path: home/app/param/predict_model.yaml}
+    metadata:
+      labels:
+        pipelines.kubeflow.org/kfp_sdk_version: 1.8.3
+        pipelines.kubeflow.org/pipeline-sdk-type: kfp
+        pipelines.kubeflow.org/enable_caching: "true"
+  - name: data-config
+    container:
+      args: [print_yaml.py, --path, /tmp/inputs/input-0/data]
+      command: [python]
+      image: registry.cn-hangzhou.aliyuncs.com/buaanlsde/fnocompute:v1
+    inputs:
+      artifacts:
+      - {name: config-data, path: /tmp/inputs/input-0/data}
+    outputs:
+      artifacts:
+      - {name: data-config-out, path: home/app/param/predict_data.yaml}
+    metadata:
+      labels:
+        pipelines.kubeflow.org/kfp_sdk_version: 1.8.3
+        pipelines.kubeflow.org/pipeline-sdk-type: kfp
+        pipelines.kubeflow.org/enable_caching: "true"
+  - name: fno-compute
+    container:
+      args: [predict.py, --predict_data, /tmp/inputs/input-0/data, --predict_model,
+        /tmp/inputs/input-1/data]
+      command: [python3]
+      image: registry.cn-hangzhou.aliyuncs.com/buaanlsde/fnocompute:v1
+    inputs:
+      artifacts:
+      - {name: input-data-load-out, path: /tmp/inputs/input-0/data}
+      - {name: model-load-out, path: /tmp/inputs/input-1/data}
+    outputs:
+      artifacts:
+      - {name: fno-compute-out, path: home/app/pred/prediction.mat}
+    metadata:
+      labels:
+        pipelines.kubeflow.org/kfp_sdk_version: 1.8.3
+        pipelines.kubeflow.org/pipeline-sdk-type: kfp
+        pipelines.kubeflow.org/enable_caching: "true"
+  - name: fno-compute-2
+    dag:
+      tasks:
+      - {name: config, template: config}
+      - name: data-config
+        template: data-config
+        dependencies: [config]
+        arguments:
+          artifacts:
+          - {name: config-data, from: '{{tasks.config.outputs.artifacts.config-data}}'}
+      - name: fno-compute
+        template: fno-compute
+        dependencies: [input-data-load, model-load]
+        arguments:
+          artifacts:
+          - {name: input-data-load-out, from: '{{tasks.input-data-load.outputs.artifacts.input-data-load-out}}'}
+          - {name: model-load-out, from: '{{tasks.model-load.outputs.artifacts.model-load-out}}'}
+      - name: generate-visualization-html-file
+        template: generate-visualization-html-file
+        dependencies: [fno-compute]
+        arguments:
+          artifacts:
+          - {name: fno-compute-out, from: '{{tasks.fno-compute.outputs.artifacts.fno-compute-out}}'}
+      - name: input-data-load
+        template: input-data-load
+        dependencies: [data-config]
+        arguments:
+          artifacts:
+          - {name: data-config-out, from: '{{tasks.data-config.outputs.artifacts.data-config-out}}'}
+      - name: model-config
+        template: model-config
+        dependencies: [config]
+        arguments:
+          artifacts:
+          - {name: config-model, from: '{{tasks.config.outputs.artifacts.config-model}}'}
+      - name: model-load
+        template: model-load
+        dependencies: [model-config]
+        arguments:
+          artifacts:
+          - {name: model-config-out, from: '{{tasks.model-config.outputs.artifacts.model-config-out}}'}
+      - name: show-pic
+        template: show-pic
+        dependencies: [generate-visualization-html-file]
+        arguments:
+          artifacts:
+          - {name: generate-visualization-html-file-out, from: '{{tasks.generate-visualization-html-file.outputs.artifacts.generate-visualization-html-file-out}}'}
+  - name: generate-visualization-html-file
+    container:
+      args: [generate_html.py, --file, /tmp/inputs/input-0/data]
+      command: [python3]
+      image: registry.cn-hangzhou.aliyuncs.com/buaanlsde/fnovis_intro:v2
+    inputs:
+      artifacts:
+      - {name: fno-compute-out, path: /tmp/inputs/input-0/data}
+    outputs:
+      artifacts:
+      - {name: generate-visualization-html-file-out, path: /app/fno_output.html}
+    metadata:
+      labels:
+        pipelines.kubeflow.org/kfp_sdk_version: 1.8.3
+        pipelines.kubeflow.org/pipeline-sdk-type: kfp
+        pipelines.kubeflow.org/enable_caching: "true"
+  - name: input-data-load
+    container:
+      args: [print_yaml.py, --path, /tmp/inputs/input-0/data]
+      command: [python]
+      image: registry.cn-hangzhou.aliyuncs.com/buaanlsde/fnocompute:v1
+    inputs:
+      artifacts:
+      - {name: data-config-out, path: /tmp/inputs/input-0/data}
+    outputs:
+      artifacts:
+      - {name: input-data-load-out, path: home/app/param/predict_data.yaml}
+    metadata:
+      labels:
+        pipelines.kubeflow.org/kfp_sdk_version: 1.8.3
+        pipelines.kubeflow.org/pipeline-sdk-type: kfp
+        pipelines.kubeflow.org/enable_caching: "true"
+  - name: model-config
+    container:
+      args: [print_yaml.py, --path, /tmp/inputs/input-0/data]
+      command: [python]
+      image: registry.cn-hangzhou.aliyuncs.com/buaanlsde/fnocompute:v1
+    inputs:
+      artifacts:
+      - {name: config-model, path: /tmp/inputs/input-0/data}
+    outputs:
+      artifacts:
+      - {name: model-config-out, path: home/app/param/predict_model.yaml}
+    metadata:
+      labels:
+        pipelines.kubeflow.org/kfp_sdk_version: 1.8.3
+        pipelines.kubeflow.org/pipeline-sdk-type: kfp
+        pipelines.kubeflow.org/enable_caching: "true"
+  - name: model-load
+    container:
+      args: [print_yaml.py, --path, /tmp/inputs/input-0/data]
+      command: [python]
+      image: registry.cn-hangzhou.aliyuncs.com/buaanlsde/fnocompute:v1
+    inputs:
+      artifacts:
+      - {name: model-config-out, path: /tmp/inputs/input-0/data}
+    outputs:
+      artifacts:
+      - {name: model-load-out, path: home/app/param/predict_model.yaml}
+    metadata:
+      labels:
+        pipelines.kubeflow.org/kfp_sdk_version: 1.8.3
+        pipelines.kubeflow.org/pipeline-sdk-type: kfp
+        pipelines.kubeflow.org/enable_caching: "true"
+  - name: show-pic
+    container:
+      args: [--html, /tmp/inputs/html/data, --mlpipeline-ui-metadata, /tmp/outputs/mlpipeline_ui_metadata/data]
+      command:
+      - sh
+      - -ec
+      - |
+        program_path=$(mktemp)
+        printf "%s" "$0" > "$program_path"
+        python3 -u "$program_path" "$@"
+      - |
+        def _make_parent_dirs_and_return_path(file_path: str):
+            import os
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+            return file_path
+
+        def show_pic(html_file_path, mlpipeline_ui_metadata_path):
+            import json
+
+            with open(html_file_path, 'r') as f:
+                content = f.read()
+
+            metadata = {
+                'outputs': [{
+                    'type': 'web-app',
+                    'storage': 'inline',
+                    'header': 'AI4SCIENCE',
+                    'source': content,
+                }]
+            }
+            with open(mlpipeline_ui_metadata_path, 'w') as metadata_file:
+                json.dump(metadata, metadata_file)
+
+        import argparse
+        _parser = argparse.ArgumentParser(prog='Show pic', description='')
+        _parser.add_argument("--html", dest="html_file_path", type=str, required=True, default=argparse.SUPPRESS)
+        _parser.add_argument("--mlpipeline-ui-metadata", dest="mlpipeline_ui_metadata_path", type=_make_parent_dirs_and_return_path, required=True, default=argparse.SUPPRESS)
+        _parsed_args = vars(_parser.parse_args())
+
+        _outputs = show_pic(**_parsed_args)
+      image: registry.cn-hangzhou.aliyuncs.com/buaanlsde/requests:v0
+    inputs:
+      artifacts:
+      - {name: generate-visualization-html-file-out, path: /tmp/inputs/html/data}
+    outputs:
+      artifacts:
+      - {name: mlpipeline-ui-metadata, path: /tmp/outputs/mlpipeline_ui_metadata/data}
+    metadata:
+      labels:
+        pipelines.kubeflow.org/kfp_sdk_version: 1.8.3
+        pipelines.kubeflow.org/pipeline-sdk-type: kfp
+        pipelines.kubeflow.org/enable_caching: "true"
+      annotations: {pipelines.kubeflow.org/component_spec: '{"implementation": {"container":
+          {"args": ["--html", {"inputPath": "html"}, "--mlpipeline-ui-metadata", {"outputPath":
+          "mlpipeline_ui_metadata"}], "command": ["sh", "-ec", "program_path=$(mktemp)\nprintf
+          \"%s\" \"$0\" > \"$program_path\"\npython3 -u \"$program_path\" \"$@\"\n",
+          "def _make_parent_dirs_and_return_path(file_path: str):\n    import os\n    os.makedirs(os.path.dirname(file_path),
+          exist_ok=True)\n    return file_path\n\ndef show_pic(html_file_path, mlpipeline_ui_metadata_path):\n    import
+          json\n\n    with open(html_file_path, ''r'') as f:\n        content = f.read()\n\n    metadata
+          = {\n        ''outputs'': [{\n            ''type'': ''web-app'',\n            ''storage'':
+          ''inline'',\n            ''header'': ''AI4SCIENCE'',\n            ''source'':
+          content,\n        }]\n    }\n    with open(mlpipeline_ui_metadata_path,
+          ''w'') as metadata_file:\n        json.dump(metadata, metadata_file)\n\nimport
+          argparse\n_parser = argparse.ArgumentParser(prog=''Show pic'', description='''')\n_parser.add_argument(\"--html\",
+          dest=\"html_file_path\", type=str, required=True, default=argparse.SUPPRESS)\n_parser.add_argument(\"--mlpipeline-ui-metadata\",
+          dest=\"mlpipeline_ui_metadata_path\", type=_make_parent_dirs_and_return_path,
+          required=True, default=argparse.SUPPRESS)\n_parsed_args = vars(_parser.parse_args())\n\n_outputs
+          = show_pic(**_parsed_args)\n"], "image": "registry.cn-hangzhou.aliyuncs.com/buaanlsde/requests:v0"}},
+          "inputs": [{"name": "html"}], "name": "Show pic", "outputs": [{"name": "mlpipeline_ui_metadata"}]}',
+        pipelines.kubeflow.org/component_ref: '{}'}
+  arguments:
+    parameters: []
+  serviceAccountName: pipeline-runner
